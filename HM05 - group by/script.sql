@@ -1,4 +1,13 @@
-﻿--1. Посчитать среднюю цену товара, общую сумму продажи по месяцам
+﻿DECLARE @MonthList TABLE
+(
+	Month INT PRIMARY KEY
+)
+
+INSERT INTO @MonthList( Month ) VALUES
+(1), (2), (3), (4), (5), (6), (7), (8), (9), (10), (11), (12)
+
+--Опционально: Написать все эти же запросы, но, если за какой-то месяц не было продаж, то этот месяц тоже должен быть в результате и там должны быть нули.
+--1. Посчитать среднюю цену товара, общую сумму продажи по месяцам
 
 SELECT
 	DATEPART( yyyy, O.OrderDate ) AS Year,
@@ -10,16 +19,68 @@ INNER JOIN Sales.OrderLines OL ON ( O.OrderID = OL.OrderID )
 GROUP BY DATEPART( yyyy, O.OrderDate ), DATEPART( MM, O.OrderDate )
 ORDER BY DATEPART( yyyy, O.OrderDate ), DATEPART( MM, O.OrderDate )
 
+;WITH OrderDataCTE( Year, Month, AverageUnitPrice, MonthTotal ) AS
+(
+	SELECT
+		DATEPART( yyyy, O.OrderDate ) AS Year,
+		DATEPART( MM, O.OrderDate ) AS Month,
+		AVG( OL.UnitPrice ) AS AverageUnitPrice,
+		SUM( OL.Quantity * OL.UnitPrice ) AS MonthTotal
+	FROM Sales.Orders O
+	INNER JOIN Sales.OrderLines OL ON ( O.OrderID = OL.OrderID )
+	GROUP BY DATEPART( yyyy, O.OrderDate ), DATEPART( MM, O.OrderDate )
+),
+YearMonthCTE( Year, Month ) AS
+(
+	SELECT DISTINCT OD.Year, ML.Month
+	FROM OrderDataCTE OD
+	CROSS JOIN @MonthList ML
+)
+SELECT
+	YM.Year,
+	YM.Month,
+	ISNULL( OD.AverageUnitPrice, 0 ) AS AverageUnitPrice,
+	ISNULL( OD.MonthTotal, 0 ) AS MonthTotal
+FROM YearMonthCTE YM
+LEFT JOIN OrderDataCTE OD ON ( ( YM.Year = OD.Year ) AND ( YM.Month = OD.Month ) )
+ORDER BY YM.Year, YM.Month
+
 --2. Отобразить все месяцы, где общая сумма продаж превысила 10 000
 
 SELECT
 	YEAR( O.OrderDate ) AS Year,
-	MONTH( O.OrderDate ) AS Month
+	MONTH( O.OrderDate ) AS Month,
+	SUM( OL.Quantity * OL.UnitPrice ) AS MonthTotal
 FROM Sales.Orders O
 INNER JOIN Sales.OrderLines OL ON ( O.OrderID = OL.OrderID )
 GROUP BY YEAR( O.OrderDate ), MONTH( O.OrderDate )
 HAVING ( SUM( OL.Quantity * OL.UnitPrice ) > 10000 )
 ORDER BY YEAR( O.OrderDate ), MONTH( O.OrderDate )
+
+;WITH OrderDataCTE( Year, Month, MonthTotal ) AS
+(
+	SELECT
+		YEAR( O.OrderDate ) AS Year,
+		MONTH( O.OrderDate ) AS Month,
+		SUM( OL.Quantity * OL.UnitPrice ) AS MonthTotal
+	FROM Sales.Orders O
+	INNER JOIN Sales.OrderLines OL ON ( O.OrderID = OL.OrderID )
+	GROUP BY YEAR( O.OrderDate ), MONTH( O.OrderDate )
+	HAVING ( SUM( OL.Quantity * OL.UnitPrice ) > 10000 )
+),
+YearMonthCTE( Year, Month ) AS
+(
+	SELECT DISTINCT OD.Year, ML.Month
+	FROM OrderDataCTE OD
+	CROSS JOIN @MonthList ML
+)
+SELECT
+	YM.Year,
+	YM.Month,
+	ISNULL( OD.MonthTotal, 0 ) AS MonthTotal
+FROM YearMonthCTE YM
+LEFT JOIN OrderDataCTE OD ON ( ( YM.Year = OD.Year ) AND ( YM.Month = OD.Month ) )
+ORDER BY YM.Year, YM.Month
 
 --3. Вывести сумму продаж, дату первой продажи и количество проданного по месяцам, по товарам, продажи которых менее 50 ед в месяц.
 --Группировка должна быть по году и месяцу.
@@ -36,6 +97,37 @@ INNER JOIN Sales.OrderLines OL ON ( O.OrderID = OL.OrderID )
 GROUP BY DATEPART( yyyy, O.OrderDate ), DATEPART( MM, O.OrderDate ), OL.StockItemID
 HAVING ( SUM( OL.Quantity ) < 50 )
 ORDER BY DATEPART( yyyy, O.OrderDate ), DATEPART( MM, O.OrderDate )
+
+;WITH OrderDataCTE( Year, Month, StockItemID, PriceTotal, FirstSalesDate, QuantityTotal ) AS
+(
+	SELECT
+		DATEPART( yyyy, O.OrderDate ) AS Year,
+		DATEPART( MM, O.OrderDate ) AS Month,
+		OL.StockItemID,
+		SUM( OL.Quantity * OL.UnitPrice ) AS PriceTotal,
+		MIN( O.OrderDate ) AS FirstSalesDate,
+		SUM( OL.Quantity ) AS QuantityTotal
+	FROM Sales.Orders O
+	INNER JOIN Sales.OrderLines OL ON ( O.OrderID = OL.OrderID )
+	GROUP BY DATEPART( yyyy, O.OrderDate ), DATEPART( MM, O.OrderDate ), OL.StockItemID
+	HAVING ( SUM( OL.Quantity ) < 50 )
+),
+YearMonthCTE( Year, Month ) AS
+(
+	SELECT DISTINCT OD.Year, ML.Month
+	FROM OrderDataCTE OD
+	CROSS JOIN @MonthList ML
+)
+SELECT
+	YM.Year,
+	YM.Month,
+	OD.StockItemID,
+	ISNULL( OD.PriceTotal, 0 ) AS PriceTotal,
+	OD.FirstSalesDate,
+	ISNULL( OD.QuantityTotal, 0 ) AS QuantityTotal
+FROM YearMonthCTE YM
+LEFT JOIN OrderDataCTE OD ON ( ( YM.Year = OD.Year ) AND ( YM.Month = OD.Month ) )
+ORDER BY YM.Year, YM.Month
 
 --4. Написать рекурсивный CTE sql запрос и заполнить им временную таблицу и табличную переменную
 /*Результат вывода рекурсивного CTE:
