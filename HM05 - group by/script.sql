@@ -1,0 +1,145 @@
+﻿--1. Посчитать среднюю цену товара, общую сумму продажи по месяцам
+
+SELECT
+	DATEPART( yyyy, O.OrderDate ) AS Year,
+	DATEPART( MM, O.OrderDate ) AS Month,
+	AVG( OL.UnitPrice ) AS AverageUnitPrice,
+	SUM( OL.Quantity * OL.UnitPrice ) AS MonthTotal
+FROM Sales.Orders O
+INNER JOIN Sales.OrderLines OL ON ( O.OrderID = OL.OrderID )
+GROUP BY DATEPART( yyyy, O.OrderDate ), DATEPART( MM, O.OrderDate )
+ORDER BY DATEPART( yyyy, O.OrderDate ), DATEPART( MM, O.OrderDate )
+
+--2. Отобразить все месяцы, где общая сумма продаж превысила 10 000
+
+SELECT
+	YEAR( O.OrderDate ) AS Year,
+	MONTH( O.OrderDate ) AS Month
+FROM Sales.Orders O
+INNER JOIN Sales.OrderLines OL ON ( O.OrderID = OL.OrderID )
+GROUP BY YEAR( O.OrderDate ), MONTH( O.OrderDate )
+HAVING ( SUM( OL.Quantity * OL.UnitPrice ) > 10000 )
+ORDER BY YEAR( O.OrderDate ), MONTH( O.OrderDate )
+
+--3. Вывести сумму продаж, дату первой продажи и количество проданного по месяцам, по товарам, продажи которых менее 50 ед в месяц.
+--Группировка должна быть по году и месяцу.
+
+SELECT
+	DATEPART( yyyy, O.OrderDate ) AS Year,
+	DATEPART( MM, O.OrderDate ) AS Month,
+	OL.StockItemID,
+	SUM( OL.Quantity * OL.UnitPrice ) AS PriceTotal,
+	MIN( O.OrderDate ) AS FirstSalesDate,
+	SUM( OL.Quantity ) AS QuantityTotal
+FROM Sales.Orders O
+INNER JOIN Sales.OrderLines OL ON ( O.OrderID = OL.OrderID )
+GROUP BY DATEPART( yyyy, O.OrderDate ), DATEPART( MM, O.OrderDate ), OL.StockItemID
+HAVING ( SUM( OL.Quantity ) < 50 )
+ORDER BY DATEPART( yyyy, O.OrderDate ), DATEPART( MM, O.OrderDate )
+
+--4. Написать рекурсивный CTE sql запрос и заполнить им временную таблицу и табличную переменную
+/*Результат вывода рекурсивного CTE:
+EmployeeID Name Title EmployeeLevel
+1   Ken Sánchez Chief Executive Officer            1
+273 | Brian Welcker Vice President of Sales        2
+16  | | David Bradley Marketing Manager            3
+23  | | | Mary Gibson Marketing Specialist         4
+274 | | Stephen Jiang North American Sales Manager 3
+276 | | | Linda Mitchell Sales Representative      4
+275 | | | Michael Blythe Sales Representative      4
+285 | | Syed Abbas Pacific Sales Manager           3
+286 | | | Lynn Tsoflias Sales Representative       4*/
+
+DROP TABLE IF EXISTS dbo.MyEmployees
+
+CREATE TABLE dbo.MyEmployees
+(
+	EmployeeID smallint NOT NULL,
+	FirstName nvarchar(30) NOT NULL,
+	LastName nvarchar(40) NOT NULL,
+	Title nvarchar(50) NOT NULL,
+	DeptID smallint NOT NULL,
+	ManagerID int NULL,
+	CONSTRAINT PK_EmployeeID PRIMARY KEY CLUSTERED ( EmployeeID ASC )
+);
+
+INSERT INTO dbo.MyEmployees VALUES
+( 1, N'Ken', N'Sánchez', N'Chief Executive Officer', 16, NULL ),
+( 273, N'Brian', N'Welcker', N'Vice President of Sales', 3, 1 ),
+( 274, N'Stephen', N'Jiang', N'North American Sales Manager', 3, 273 ),
+( 275, N'Michael', N'Blythe', N'Sales Representative', 3, 274 ),
+( 276, N'Linda', N'Mitchell', N'Sales Representative', 3, 274 ),
+( 285, N'Syed', N'Abbas', N'Pacific Sales Manager', 3, 273 ),
+( 286, N'Lynn', N'Tsoflias', N'Sales Representative', 3, 285 ),
+( 16, N'David',N'Bradley', N'Marketing Manager', 4, 273 ),
+( 23, N'Mary', N'Gibson', N'Marketing Specialist', 4, 16 );
+
+DROP TABLE IF EXISTS #TmpEmployees
+CREATE TABLE #TmpEmployees
+(
+	EmployeeID INT, 
+	Name NVARCHAR( 100 ),
+	Title NVARCHAR( 50 ),
+	EmployeeLevel INT
+)
+
+DECLARE @VariableEmployees TABLE
+(
+	EmployeeID INT, 
+	Name NVARCHAR( 100 ),
+	Title NVARCHAR( 50 ),
+	EmployeeLevel INT
+)
+
+;WITH EmployeesCTE( EmployeeID, FirstName, LastName, Title, ManagerID, EmployeeLevel, LevelCode, NamePrefix ) AS
+(
+	SELECT
+		EmployeeID,
+		FirstName,
+		LastName,
+		Title,
+		ManagerID,
+		1 AS EmployeeLevel,
+		CAST( 'Root' AS NVARCHAR( MAX ) )  AS LevelCode,
+		CAST( '' AS NVARCHAR( MAX ) ) AS NamePrefix
+	FROM MyEmployees
+	WHERE ( ManagerID IS NULL )
+
+	UNION ALL
+
+	SELECT
+		ME.EmployeeID,
+		ME.FirstName,
+		ME.LastName,
+		ME.Title,
+		ME.ManagerID,
+		ECTE.EmployeeLevel + 1 AS EmployeeLevel,
+		CONCAT( ECTE.LevelCode, '\', ME.FirstName, ' ', ME.LastName, '(', CAST( ME.EmployeeID AS NVARCHAR( MAX ) ) ,')' ) AS LevelCode,
+		CONCAT( ECTE.NamePrefix, '| ' ) AS NamePrefix
+	FROM MyEmployees ME
+	INNER JOIN EmployeesCTE ECTE ON ( ME.ManagerID = ECTE.EmployeeID )
+)
+INSERT INTO #TmpEmployees( EmployeeID, Name, Title, EmployeeLevel )
+SELECT
+	EmployeeID,
+	CONCAT( NamePrefix, FirstName, ' ', LastName ) AS Name,
+	Title,
+	EmployeeLevel
+FROM EmployeesCTE
+ORDER BY LevelCode
+
+INSERT INTO @VariableEmployees( EmployeeID, Name, Title, EmployeeLevel )
+SELECT
+	EmployeeID,
+	Name,
+	Title,
+	EmployeeLevel
+FROM #TmpEmployees
+
+--JUST FOR TEST
+
+SELECT *
+FROM #TmpEmployees
+
+SELECT *
+FROM @VariableEmployees
