@@ -73,6 +73,8 @@ BULK INSERT [WideWorldImporters].Sales.vwImportCustomer
 		TABLOCK        
 	  );
 
+GO
+
 DROP VIEW Sales.vwImportCustomer
 
 /*file content is:
