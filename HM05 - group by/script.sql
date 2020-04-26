@@ -45,6 +45,56 @@ FROM YearMonthCTE YM
 LEFT JOIN OrderDataCTE OD ON ( ( YM.Year = OD.Year ) AND ( YM.Month = OD.Month ) )
 ORDER BY YM.Year, YM.Month
 
+;WITH OrderDataCTE2( Year, Month, AverageUnitPrice, MonthTotal ) AS
+(
+	SELECT
+		DATEPART( yyyy, O.OrderDate ) AS Year,
+		DATEPART( MM, O.OrderDate ) AS Month,
+		AVG( OL.UnitPrice ) AS AverageUnitPrice,
+		SUM( OL.Quantity * OL.UnitPrice ) AS MonthTotal
+	FROM Sales.Orders O
+	INNER JOIN Sales.OrderLines OL ON ( O.OrderID = OL.OrderID )
+	GROUP BY DATEPART( yyyy, O.OrderDate ), DATEPART( MM, O.OrderDate )
+),
+MaxMonthCTE( Year, Month ) AS
+(
+	SELECT
+		Year,
+		MAX( Month )
+	FROM OrderDataCTE2
+	GROUP BY Year
+),
+FullOrderDataCTE( Year, Month, AverageUnitPrice, MonthTotal ) AS
+(
+	SELECT
+		Year,
+		Month,
+		AverageUnitPrice,
+		MonthTotal
+	FROM OrderDataCTE2 O
+
+	UNION ALL
+
+	SELECT
+		O.Year,
+		O.Month,
+		0 AS AverageUnitPrice,
+		0 AS MonthTotal
+	FROM FullOrderDataCTE O
+	INNER JOIN MaxMonthCTE MM ON ( O.Year = MM.Year )
+	WHERE (  )
+
+)
+
+
+SELECT
+	OD.Year,
+	OD.Month,
+	OD.AverageUnitPrice,
+	OD.MonthTotal
+FROM OrderDataCTE2 OD
+ORDER BY OD.Year, OD.Month
+
 --2. Отобразить все месяцы, где общая сумма продаж превысила 10 000
 
 SELECT
