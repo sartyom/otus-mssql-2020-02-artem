@@ -106,7 +106,7 @@ FROM Warehouse.StockItems
 Для поиска использовать равенство, использовать LIKE запрещено.
 */
 
-;WITH ContacTagsCTE( StockItemID, Tags ) AS
+;WITH CustomTagsCTE( StockItemID, Tags ) AS
 (
 	SELECT
 		StockItemID,
@@ -120,7 +120,7 @@ SELECT
 	SI.StockItemName,
 	CT.Tags
 FROM Warehouse.StockItems SI
-INNER JOIN ContacTagsCTE CT ON ( CT.StockItemID = SI.StockItemID )
+INNER JOIN CustomTagsCTE CT ON ( CT.StockItemID = SI.StockItemID )
 CROSS APPLY OPENJSON( CustomFields, '$.Tags' )
 WHERE [value] = 'Vintage'
 
