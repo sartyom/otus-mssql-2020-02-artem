@@ -1,0 +1,326 @@
+﻿CREATE DATABASE Webshop CONTAINMENT = NONE ON PRIMARY
+( 
+	NAME = Webshop, FILENAME = N'C:\Work\DB\Webshop.mdf' , 
+	SIZE = 8MB , 
+	MAXSIZE = UNLIMITED, 
+	FILEGROWTH = 65536KB
+)
+LOG ON 
+( 
+	NAME = Webshop_Log, FILENAME = N'C:\Work\DB\Webshop.ldf' , 
+	SIZE = 8MB , 
+	MAXSIZE = 10GB , 
+	FILEGROWTH = 65536KB
+)
+GO
+
+use Webshop
+
+GO
+
+CREATE TABLE [Image]
+(
+	ImageId INT IDENTITY( 1,1 ) NOT NULL,
+	Width INT NOT NULL,
+	Height INT NOT NULL,
+	[Data] VARBINARY NOT NULL,
+	ImageSource NVARCHAR( 500 ) NOT NULL,
+	CreatedDate DATETIME2( 7 ) NOT NULL,
+	CONSTRAINT PK_Image PRIMARY KEY CLUSTERED( ImageId )
+)
+GO
+
+CREATE TABLE [Language]
+(
+	LanguageId SMALLINT NOT NULL,
+	[Name] NVARCHAR( 100 ) NOT NULL,
+	Code NVARCHAR( 10 ) NOT NULL,
+	CONSTRAINT PK_Language PRIMARY KEY CLUSTERED ( LanguageId )
+)
+GO
+
+CREATE TABLE Category
+(
+	CategoryId INT IDENTITY( 1, 1 ) NOT NULL,
+	ParentCategoryId INT NOT NULL,
+	CreatedDate DATETIME2( 7 ) NOT NULL,
+	[Name] NVARCHAR( 100 ) NOT NULL,
+	CONSTRAINT PK_Category PRIMARY KEY CLUSTERED ( CategoryId ),
+	CONSTRAINT UX_Category_Name UNIQUE NONCLUSTERED ( [Name] )
+)
+GO
+
+ALTER TABLE Category ADD CONSTRAINT FK_Category_Category FOREIGN KEY( ParentCategoryId ) REFERENCES Category( CategoryId )
+GO
+
+CREATE TABLE CategoryName
+(
+	CategoryId INT NOT NULL,
+	LanguageId SMALLINT NOT NULL,
+	[Name] NVARCHAR( 100 ) NOT NULL,
+	CONSTRAINT PK_CategoryName PRIMARY KEY CLUSTERED ( CategoryId, LanguageId )
+)
+GO
+
+ALTER TABLE CategoryName ADD CONSTRAINT FK_CategoryName_Category FOREIGN KEY( CategoryId ) REFERENCES Category( CategoryId )
+GO
+
+ALTER TABLE CategoryName ADD CONSTRAINT FK_CategoryName_Language FOREIGN KEY( LanguageId ) REFERENCES [Language]( LanguageId )
+GO
+
+CREATE TABLE Brand
+(
+	BrandId INT IDENTITY( 1,1 ) NOT NULL,
+	[Name] NVARCHAR( 100 ) NOT NULL,
+	ImageId INT NOT NULL,
+	CreatedDate DATETIME2( 7 ) NOT NULL,
+	CONSTRAINT PK_Brand PRIMARY KEY CLUSTERED ( BrandId ),
+	CONSTRAINT UX_Brand_Name UNIQUE NONCLUSTERED ( [Name] )
+)
+GO
+
+ALTER TABLE Brand ADD CONSTRAINT FK_Brand_Image FOREIGN KEY( ImageId ) REFERENCES [Image]( ImageId )
+GO
+
+CREATE TABLE Product
+(
+	ProductId INT IDENTITY( 1, 1 ) NOT NULL,
+	BrandId INT NOT NULL,
+	CategoryId INT NOT NULL,
+	[Name] NVARCHAR( 100 ) NOT NULL,
+	Cost DECIMAL( 18, 4 ) NULL,
+	Price DECIMAL( 18, 4 ) NULL,
+	Active BIT NOT NULL,
+	Sku NVARCHAR( 100 ) NOT NULL,
+	CONSTRAINT PK_Product PRIMARY KEY CLUSTERED( ProductId ),
+	CONSTRAINT UX_Product_Name UNIQUE NONCLUSTERED(	[Name] )
+)
+GO
+
+ALTER TABLE Product ADD CONSTRAINT FK_Product_Brand FOREIGN KEY( BrandId ) REFERENCES Brand( BrandId )
+GO
+
+ALTER TABLE Product ADD CONSTRAINT FK_Product_Category FOREIGN KEY( CategoryId ) REFERENCES Category( CategoryId )
+GO
+
+CREATE TABLE ProductImage
+(
+	ProductId INT NOT NULL,
+	ImageId INT NOT NULL,
+	[Order] SMALLINT NOT NULL,
+	CONSTRAINT PK_ProductImage PRIMARY KEY CLUSTERED ( ProductId, ImageId )
+)
+GO
+
+ALTER TABLE ProductImage ADD CONSTRAINT FK_ProductImage_Image FOREIGN KEY( ImageId ) REFERENCES [Image]( ImageId )
+GO
+
+ALTER TABLE ProductImage ADD CONSTRAINT FK_ProductImage_Product FOREIGN KEY( ProductId ) REFERENCES Product ( ProductId )
+GO
+
+CREATE TABLE [User]
+(
+	UserId INT IDENTITY( 1, 1 ) NOT NULL,
+	FirstName NVARCHAR( 100 ) NOT NULL,
+	LastName NVARCHAR( 100 ) NOT NULL,
+	Phone NVARCHAR( 50 ) NULL,
+	Email NVARCHAR( 50 ) NOT NULL,
+	PasswordHash CHAR(100) NOT NULL,
+	CONSTRAINT [PK_User] PRIMARY KEY CLUSTERED ( UserId )
+)
+GO
+
+CREATE TABLE UserWish
+(
+	UserWishId INT IDENTITY( 1, 1 ) NOT NULL,
+	UserId INT NOT NULL,
+	[Name] NVARCHAR( 100 ) NOT NULL,
+	CreatedDate DATETIME2( 7 ) NOT NULL,
+	CONSTRAINT PK_UserWish PRIMARY KEY CLUSTERED ( UserWishId ASC )
+)
+GO
+
+ALTER TABLE UserWish ADD CONSTRAINT FK_UserWish_User FOREIGN KEY( UserId ) REFERENCES [User] ( UserId )
+GO
+
+CREATE TABLE UserWishProduct
+(
+	UserWishId INT NOT NULL,
+	ProductId INT NOT NULL,
+	CreatedDate DATETIME2( 7 ) NOT NULL
+)
+GO
+
+ALTER TABLE UserWishProduct ADD CONSTRAINT FK_UserWishProduct_Product FOREIGN KEY( ProductId ) REFERENCES Product ( ProductId )
+GO
+
+ALTER TABLE UserWishProduct ADD CONSTRAINT FK_UserWishProduct_UserWish FOREIGN KEY( UserWishId ) REFERENCES UserWish ( UserWishId )
+GO
+
+CREATE TABLE Rating
+(
+	RatingId INT IDENTITY( 1, 1 ) NOT NULL,
+	RatingValue TINYINT NOT NULL,
+	Comment NVARCHAR( 500 ) NULL,
+	CreatedDate DATETIME2( 7 ) NOT NULL,
+	CONSTRAINT PK_ProductRating PRIMARY KEY CLUSTERED( RatingId )
+)
+GO
+
+CREATE TABLE ProductRating
+(
+	ProductId INT NOT NULL,
+	RatingId INT NOT NULL,
+	UserId INT NOT NULL,
+	CONSTRAINT [PK_ProductRating1] PRIMARY KEY CLUSTERED( ProductId ASC, RatingId )
+)
+GO
+
+ALTER TABLE ProductRating ADD CONSTRAINT FK_ProductRating_Product FOREIGN KEY( ProductId ) REFERENCES Product( ProductId )
+GO
+
+ALTER TABLE ProductRating ADD CONSTRAINT FK_ProductRating_Rating FOREIGN KEY( RatingId ) REFERENCES Rating( RatingId )
+GO
+
+ALTER TABLE ProductRating ADD CONSTRAINT FK_ProductRating_User FOREIGN KEY( UserId ) REFERENCES [User]( UserId )
+GO
+
+CREATE TABLE ProductName
+(
+	ProductId INT NOT NULL,
+	[LanguageId] SMALLINT NOT NULL,
+	[Name] NVARCHAR( 100 ) NOT NULL,
+	CONSTRAINT [PK_ProductName] PRIMARY KEY CLUSTERED ( ProductId, LanguageId )
+)
+GO
+
+ALTER TABLE ProductName ADD CONSTRAINT FK_ProductName_Language FOREIGN KEY( LanguageId ) REFERENCES [Language]( LanguageId )
+GO
+
+ALTER TABLE ProductName ADD CONSTRAINT FK_ProductName_Product FOREIGN KEY( ProductId ) REFERENCES Product( ProductId )
+GO
+
+CREATE TABLE ShoppingCart
+(
+	ShoppingCartId INT IDENTITY( 1, 1 ) NOT NULL,
+	UserId INT NULL,
+	CONSTRAINT [PK_ShoppingCart] PRIMARY KEY CLUSTERED( ShoppingCartId )
+)
+GO
+
+ALTER TABLE ShoppingCart ADD CONSTRAINT FK_ShoppingCart_User FOREIGN KEY( UserId ) REFERENCES [User]( UserId )
+GO
+
+CREATE TABLE ShoppingCartLine
+(
+	ShoppingCartId INT NOT NULL,
+	ProductId INT NOT NULL,
+	Quantity SMALLINT NOT NULL,
+	[Order] SMALLINT NOT NULL
+)
+GO
+
+ALTER TABLE ShoppingCartLine ADD CONSTRAINT FK_ShoppingCartLine_Product FOREIGN KEY( ProductId ) REFERENCES Product( ProductId )
+GO
+
+ALTER TABLE ShoppingCartLine ADD CONSTRAINT FK_ShoppingCartLine_ShoppingCart FOREIGN KEY( ShoppingCartId ) REFERENCES ShoppingCart( ShoppingCartId )
+GO
+
+CREATE TABLE Country
+(
+	Country INT IDENTITY( 1, 1 ) NOT NULL,
+	[Name] NVARCHAR( 100 ) NULL,
+	Code VARCHAR( 4 ) NULL,
+	CONSTRAINT [PK_Country] PRIMARY KEY CLUSTERED( Country )
+)
+GO
+
+CREATE TABLE City
+(
+	CityId INT IDENTITY( 1, 1 ) NOT NULL,
+	[Name] NVARCHAR( 50 ) NOT NULL,
+	CONSTRAINT PK_City PRIMARY KEY CLUSTERED( CityId )
+)
+GO
+
+CREATE TABLE [Address]
+(
+	AddressId INT IDENTITY( 1, 1 ) NOT NULL,
+	UserId INT NOT NULL,
+	CountryId INT NOT NULL,
+	CityId INT NOT NULL,
+	PostalCode NVARCHAR(10) NOT NULL,
+	Street1 NVARCHAR(200) NOT NULL,
+	Street2 NVARCHAR(200) NULL,
+	Phone NVARCHAR( 100 ) NULL,
+	FirstName NVARCHAR( 100 ) NOT NULL,
+	LastName NVARCHAR( 100 ) NOT NULL,
+	Comment NVARCHAR( 300 ) NULL,
+	CONSTRAINT [PK_Address] PRIMARY KEY CLUSTERED( AddressId )
+)
+GO
+
+ALTER TABLE Address ADD CONSTRAINT FK_Address_City FOREIGN KEY( CityId ) REFERENCES City( CityId )
+GO
+
+ALTER TABLE Address ADD CONSTRAINT FK_Address_Country FOREIGN KEY( CountryId ) REFERENCES Country( Country )
+GO
+
+
+ALTER TABLE Address ADD CONSTRAINT FK_Address_User FOREIGN KEY( UserId ) REFERENCES [User]( UserId )
+GO
+
+CREATE TABLE OrderStatus
+(
+	OrderStatusId TINYINT NOT NULL,
+	[Name] NVARCHAR( 50 ) NOT NULL,
+	CONSTRAINT PK_OrderStatus PRIMARY KEY CLUSTERED( OrderStatusId )
+)
+GO
+
+CREATE TABLE SalesOrder
+(
+	SalesOrderId INT IDENTITY( 1, 1 ) NOT NULL,
+	UserId INT NOT NULL,
+	CreatedDate DATETIME2( 7 ) NOT NULL,
+	UserComment NVARCHAR(500) NOT NULL,
+	OrderTotal DECIMAL(18, 4) NOT NULL,
+	OrderStatusId TINYINT NOT NULL,
+	ShippingAddressId INT NOT NULL,
+	BillingAddressId INT NOT NULL,
+	CONSTRAINT PK_SalesOrder PRIMARY KEY CLUSTERED( SalesOrderId )
+)
+GO
+
+ALTER TABLE SalesOrder ADD CONSTRAINT FK_SalesOrder_Address FOREIGN KEY( ShippingAddressId ) REFERENCES [Address] ( AddressId )
+GO
+
+
+ALTER TABLE SalesOrder ADD CONSTRAINT FK_SalesOrder_Address1 FOREIGN KEY( BillingAddressId ) REFERENCES [Address] ( AddressId )
+GO
+
+ALTER TABLE SalesOrder ADD CONSTRAINT FK_SalesOrder_OrderStatus FOREIGN KEY( OrderStatusId ) REFERENCES OrderStatus( OrderStatusId )
+GO
+
+ALTER TABLE SalesOrder ADD CONSTRAINT FK_SalesOrder_User FOREIGN KEY( UserId ) REFERENCES [User]( UserId )
+GO
+
+CREATE TABLE SalesOrderLine
+(
+	SalesOrderLineId INT IDENTITY( 1, 1 ) NOT NULL,
+	SalesOrderId INT NOT NULL,
+	ProductId INT NOT NULL,
+	Quantity SMALLINT NOT NULL,
+	SalesTax DECIMAL( 18, 4 ) NOT NULL,
+	[Name] NVARCHAR( 100 ) NOT NULL,
+	UserComment NVARCHAR( 500 ) NOT NULL,
+	CONSTRAINT PK_SalesOrderLine PRIMARY KEY CLUSTERED( SalesOrderLineId )
+)
+GO
+
+ALTER TABLE SalesOrderLine ADD CONSTRAINT FK_SalesOrderLine_Product FOREIGN KEY( ProductId ) REFERENCES Product( ProductId )
+GO
+
+ALTER TABLE SalesOrderLine ADD CONSTRAINT FK_SalesOrderLine_SalesOrder FOREIGN KEY( SalesOrderId ) REFERENCES SalesOrder( SalesOrderId )
+GO
+
