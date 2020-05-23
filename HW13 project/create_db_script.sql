@@ -235,12 +235,44 @@ CREATE TABLE Country
 )
 GO
 
+CREATE TABLE Region
+(
+	RegionId INT IDENTITY( 1,1 ) NOT NULL,
+	[Name] NVARCHAR( 100 ) NOT NULL,
+	CountryId INT NOT NULL,
+	CONSTRAINT PK_Region PRIMARY KEY CLUSTERED( RegionId )
+)
+GO
+
+ALTER TABLE Region ADD CONSTRAINT FK_Region_Country FOREIGN KEY( CountryId ) REFERENCES Country( Country )
+GO
+
 CREATE TABLE City
 (
 	CityId INT IDENTITY( 1, 1 ) NOT NULL,
 	[Name] NVARCHAR( 50 ) NOT NULL,
+	RegionId INT NOT NULL,
+	CountryId INT NOT NULL,
 	CONSTRAINT PK_City PRIMARY KEY CLUSTERED( CityId )
 )
+GO
+
+ALTER TABLE City ADD CONSTRAINT FK_City_Country FOREIGN KEY( CountryId ) REFERENCES Country( Country )
+GO
+
+ALTER TABLE City ADD CONSTRAINT FK_City_Region FOREIGN KEY( RegionId ) REFERENCES Region( RegionId )
+GO
+
+CREATE TABLE PostalCode
+(
+	PostalCodeId INT IDENTITY(1,1) NOT NULL,
+	CityId INT NOT NULL,
+	PostalCode CHAR( 10 ) NOT NULL,
+	CONSTRAINT PK_PostalCode PRIMARY KEY CLUSTERED ( PostalCodeId )
+)
+GO
+
+ALTER TABLE PostalCode ADD CONSTRAINT FK_PostalCode_City FOREIGN KEY( CityId ) REFERENCES City( CityId )
 GO
 
 CREATE TABLE [Address]
@@ -249,7 +281,7 @@ CREATE TABLE [Address]
 	UserId INT NOT NULL,
 	CountryId INT NOT NULL,
 	CityId INT NOT NULL,
-	PostalCode NVARCHAR(10) NOT NULL,
+	PostalCodeId INT NOT NULL,
 	Street1 NVARCHAR(200) NOT NULL,
 	Street2 NVARCHAR(200) NULL,
 	Phone NVARCHAR( 100 ) NULL,
@@ -260,14 +292,16 @@ CREATE TABLE [Address]
 )
 GO
 
-ALTER TABLE Address ADD CONSTRAINT FK_Address_City FOREIGN KEY( CityId ) REFERENCES City( CityId )
+ALTER TABLE [Address] ADD CONSTRAINT FK_Address_City FOREIGN KEY( CityId ) REFERENCES City( CityId )
 GO
 
-ALTER TABLE Address ADD CONSTRAINT FK_Address_Country FOREIGN KEY( CountryId ) REFERENCES Country( Country )
+ALTER TABLE [Address] ADD CONSTRAINT FK_Address_Country FOREIGN KEY( CountryId ) REFERENCES Country( Country )
 GO
 
+ALTER TABLE [Address] ADD CONSTRAINT FK_Address_PostalCode FOREIGN KEY( PostalCodeId ) REFERENCES PostalCode( PostalCodeId )
+GO
 
-ALTER TABLE Address ADD CONSTRAINT FK_Address_User FOREIGN KEY( UserId ) REFERENCES [User]( UserId )
+ALTER TABLE [Address] ADD CONSTRAINT FK_Address_User FOREIGN KEY( UserId ) REFERENCES [User]( UserId )
 GO
 
 CREATE TABLE OrderStatus
@@ -314,6 +348,7 @@ CREATE TABLE SalesOrderLine
 	SalesTax DECIMAL( 18, 4 ) NOT NULL,
 	[Name] NVARCHAR( 100 ) NOT NULL,
 	UserComment NVARCHAR( 500 ) NOT NULL,
+	SalesPrice DECIMAL(18, 4) NOT NULL,
 	CONSTRAINT PK_SalesOrderLine PRIMARY KEY CLUSTERED( SalesOrderLineId )
 )
 GO
