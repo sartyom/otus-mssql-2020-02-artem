@@ -9,7 +9,7 @@
 
 Например:
 
-Country.Name, Brand.Name  - уникальные индексы, так как повторений в имнах стран и брендов быть не может, но при этом эти поля учавствуют в поиске.
+Country.Name, Brand.Name  - уникальные индексы, так как повторений в именах стран и брендов быть не может
 
 ProductName.ProductId + ProductName.LanguageId - уникальный индекс по двум полям, подразумевается, что будет запрос с поиском имени продукта для конкретного языка, например:
 
@@ -17,8 +17,7 @@ SELECT ProductId, Name
 FROM ProductName
 WHERE ( ProductId = 112233 ) AND ( LangueageId = 1 )
 
-
-User.Email - индекс с включением паролья, для ускорения поиска пользователя:
+User.Email - индекс с включением пароля, для ускорения поиска пользователя:
 
 SELECT 1
 FROM User
@@ -30,60 +29,26 @@ SELECT ProductId, Name
 FROM Product
 WHERE FREETEXT ( Name, N'iphone or ipod' )
 
-
 Полный список индексов:
 
 Подсистема адреса:
 
-- Country.Name - уникальный индекс, для быстрого поиска страны
-
-- Region.Name - простой индекс
-- Region.CountryId - простой индекс
-
-- City.Name - простой индекс
-- City.CountryId - простой индекс
-- City.RegionId - простой индекс
-
-- PostalCode.CityId - простой индекс
-- PostalCode.PostalCode - простой индекс
-
+- Country.Name - уникальный индекс (имя страны обязательно должно быть уникальным)
 
 Подсистема продукта:
 
 - Product.Name - полнотекстовый поиск
-- Product.BrandId - простой индекс
-- Product.CategoryId - простой индекс
-- Product.Sku - простой индекс
+- Product.Sku - простой индекс (для возможности быстрого поиска продукта по SKU)
 - ProductName.Name - полнотекстовый поиск
-- ProductName.ProductId + ProductName.LanguageId - уникальный индекс
+- ProductName.ProductId + ProductName.LanguageId - уникальный индекс (подразумевается, что будет запрос с поиском имени продукта для конкретного языка, выше есть пример запроса)
 
-- ProductDocument.ProductId - простой индекс
+- Document.DocumentHash - уникальный индекс (все документы должны быть в единсвенном числе, например не должно быть дубликатов изображений, поэтому для них вычисляется и хранится в бзе хэшь код md5)
+- Document.Code - уникальный индекс (поле с типом GUID, используется для передачи ссылок на документы, поэтому поле должно быть уникальным и должна быть возможность быстрого поиска документа)
 
-- Document.DocumentHash - уникальный индекс
-- Document.Source - прстой индекс
-- Document.Code - простой индекс
+- Brand.Name - уникальный индекс (имя бренда обязательно должно быть уникальным)
 
-- Brand.Name - уникальный индекс
+- CategoryName.CategoryId + CategoryName.LanguageId - уникальный индекс ( аналогично для ProductName.ProductId + ProductName.LanguageId )
 
-- Category.ParentCategoryId - простой индекс
-- Category.Name - простой индекс
-- CategoryName.Name - простой индекс
-- CategoryName.CategoryId + CategoryName.LanguageId - уникальный индекс
+- User.Email - простой индекс + включить в этот индекс поле пассворда, для более быстрого поиска ( выше есть пример с описанием и запросом )
 
-- ProductRating.UserId
-
-- User.Email - простой индекс + включить в этот индекс поле пассворда, для более быстрого поиска
-
-- UserWishProduct.UserWishId + UserWishProduct.ProductId - уникальный констреинт
-- UserWish.UserId - простой индекс
-
-
-Подсистема сейлс ордер и корзины:
-
-- SalesOrder.UserId - простой индекс
-- SalesOrderLine.SalesOrderId - простой индекс
-
-- Address.UserId - простой индекс
-
-- ShoppingCart.UserId - простой индекс
-- ShoppingCartLine.ShoppingCartId - простой индекс
+- UserWishProduct.UserWishId + UserWishProduct.ProductId - уникальный индекс (нельзя добавить несколько одинаковых продуктов в wish list пользователя)
