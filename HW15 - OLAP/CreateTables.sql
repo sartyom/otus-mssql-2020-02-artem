@@ -1,0 +1,143 @@
+CREATE TABLE [dbo].[DIM_Brand](
+	[BrandId] [int] NOT NULL,
+	[Name] [nvarchar](100) NOT NULL,
+ CONSTRAINT [PK_DIM_Brand] PRIMARY KEY CLUSTERED 
+(
+	[BrandId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+CREATE TABLE [dbo].[DIM_Category](
+	[CategoryId] [int] NOT NULL,
+	[Name] [nvarchar](100) NOT NULL,
+ CONSTRAINT [PK_DIM_Category] PRIMARY KEY CLUSTERED 
+(
+	[CategoryId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+CREATE TABLE [dbo].[DIM_City](
+	[CityId] [int] NOT NULL,
+	[Name] [nvarchar](50) NOT NULL,
+ CONSTRAINT [PK_DIM_City] PRIMARY KEY CLUSTERED 
+(
+	[CityId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+CREATE TABLE [dbo].[DIM_Country](
+	[CountryId] [int] NOT NULL,
+	[Name] [nvarchar](100) NOT NULL,
+ CONSTRAINT [PK_DIM_Country] PRIMARY KEY CLUSTERED 
+(
+	[CountryId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+CREATE TABLE [dbo].[DIM_Product](
+	[ProductId] [int] NOT NULL,
+	[Name] [varbinary](100) NOT NULL,
+ CONSTRAINT [PK_DIM_Product] PRIMARY KEY CLUSTERED 
+(
+	[ProductId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+CREATE TABLE [dbo].[DIM_Region](
+	[RegionId] [int] NOT NULL,
+	[Name] [nvarchar](100) NOT NULL,
+ CONSTRAINT [PK_DIM_Region] PRIMARY KEY CLUSTERED 
+(
+	[RegionId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+CREATE TABLE [dbo].[DIM_Time](
+	[TimeId] [int] NOT NULL,
+	[Time] [datetime2](7) NOT NULL,
+	[Month] [date] NOT NULL,
+	[Year] [date] NOT NULL,
+ CONSTRAINT [PK_DIM_Time] PRIMARY KEY CLUSTERED 
+(
+	[TimeId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+CREATE TABLE [dbo].[FACT_ProductSales](
+	[ProductId] [int] NOT NULL,
+	[BrandId] [int] NOT NULL,
+	[CategoryId] [int] NOT NULL,
+	[CountryId] [int] NOT NULL,
+	[RegionId] [int] NOT NULL,
+	[CityId] [int] NOT NULL,
+	[TimeId] [int] NOT NULL,
+	[TotalCount] [int] NOT NULL,
+	[TotalSalesPrice] [decimal](18, 4) NOT NULL,
+ CONSTRAINT [PK_FACT_ProductSales] PRIMARY KEY CLUSTERED 
+(
+	[ProductId] ASC,
+	[BrandId] ASC,
+	[CategoryId] ASC,
+	[CountryId] ASC,
+	[RegionId] ASC,
+	[CityId] ASC,
+	[TimeId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales]  WITH CHECK ADD  CONSTRAINT [FK_FACT_ProductSales_DIM_Brand] FOREIGN KEY([BrandId])
+REFERENCES [dbo].[DIM_Brand] ([BrandId])
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales] CHECK CONSTRAINT [FK_FACT_ProductSales_DIM_Brand]
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales]  WITH CHECK ADD  CONSTRAINT [FK_FACT_ProductSales_DIM_Category] FOREIGN KEY([CategoryId])
+REFERENCES [dbo].[DIM_Category] ([CategoryId])
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales] CHECK CONSTRAINT [FK_FACT_ProductSales_DIM_Category]
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales]  WITH CHECK ADD  CONSTRAINT [FK_FACT_ProductSales_DIM_City] FOREIGN KEY([CityId])
+REFERENCES [dbo].[DIM_City] ([CityId])
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales] CHECK CONSTRAINT [FK_FACT_ProductSales_DIM_City]
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales]  WITH CHECK ADD  CONSTRAINT [FK_FACT_ProductSales_DIM_Country] FOREIGN KEY([CountryId])
+REFERENCES [dbo].[DIM_Country] ([CountryId])
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales] CHECK CONSTRAINT [FK_FACT_ProductSales_DIM_Country]
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales]  WITH CHECK ADD  CONSTRAINT [FK_FACT_ProductSales_DIM_Product] FOREIGN KEY([ProductId])
+REFERENCES [dbo].[DIM_Product] ([ProductId])
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales] CHECK CONSTRAINT [FK_FACT_ProductSales_DIM_Product]
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales]  WITH CHECK ADD  CONSTRAINT [FK_FACT_ProductSales_DIM_Region] FOREIGN KEY([RegionId])
+REFERENCES [dbo].[DIM_Region] ([RegionId])
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales] CHECK CONSTRAINT [FK_FACT_ProductSales_DIM_Region]
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales]  WITH CHECK ADD  CONSTRAINT [FK_FACT_ProductSales_DIM_Time] FOREIGN KEY([TimeId])
+REFERENCES [dbo].[DIM_Time] ([TimeId])
+GO
+
+ALTER TABLE [dbo].[FACT_ProductSales] CHECK CONSTRAINT [FK_FACT_ProductSales_DIM_Time]
+GO
